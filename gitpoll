@@ -45,7 +45,6 @@ do
 	for repo in ${repositories[@]};
 	do
 		cd "$repo"
-		# fetchresult=`nice git fetch 2>&1`
 		fetchresult=`nice git fetch --all 2>&1`
 		grepresult=`echo "$fetchresult" | egrep -v "$ignore"`
 
