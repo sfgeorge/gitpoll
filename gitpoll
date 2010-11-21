@@ -1,0 +1,62 @@
+#!/bin/bash
+
+## gitpoll: polls (fetches) remote git repositories for updates
+#  Usage:  gitpoll
+
+
+## Parameters:
+
+# Customize these in your ~/.gitpoll to point to the repositories you want to fetch
+repositories=()
+naptime=30  # Time to pause between fetch runs, in seconds
+
+# When polling, ignore a bunch of no-op and network-related messages
+ignore='assign requested address|Connection closed by|Connection refused'\
+'|Connection reset by peer|Could not fetch|Could not resolve hostname'\
+'|Fetching |HTTP request failed|Network is unreachable|No route to host'\
+'|nodename nor servname provided|Operation timed out'\
+'|The remote end hung up unexpectedly|timed out while waiting to read'
+
+
+## Functions
+
+function config_missing
+{
+	echo -n 'fatal: No config file was found.  You must create ~/.gitpoll to tell'
+	echo ' gitpoll which repositories to monitor.'
+	echo
+	echo '~/.gitpoll Example:'
+	echo
+	echo 'repositories=(~/Code/hello-world ~/Code/project-awesome ~/Code/secret-weapon)'
+	exit 255
+}
+
+
+## Execute
+
+# Ring the system bell. This can be disabled in your ~/.gitpoll.
+set bell-style audible  
+
+# Loads your ~/.gitpoll
+source ~/.gitpoll 2> /dev/null || config_missing
+
+while [ 1 ]
+do
+	for repo in ${repositories[@]};
+	do
+		cd "$repo"
+		# fetchresult=`nice git fetch 2>&1`
+		fetchresult=`nice git fetch --all 2>&1`
+		grepresult=`echo "$fetchresult" | egrep -v "$ignore"`
+
+		if [ x"$grepresult"x != 'xx' ]
+		then
+			echo -e "\a"
+			echo -n 'Changes fetched from '$repo' at '
+			date
+			echo $fetchresult
+		fi
+		sleep 1
+	done
+	sleep $naptime
+done
